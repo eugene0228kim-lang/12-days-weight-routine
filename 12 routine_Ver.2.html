@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- 아이폰 PWA 설정 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="12일 루틴">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3048/3048378.png">
+    
+    <title>12일 운동루틴</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;900&display=swap');
+        
+        :root {
+            --u-blue: #4F46E5;
+            --u-bg: #F5F7FF;
+            --n-pink: #EC4899;
+            --n-bg: #FFF5F7;
+            --bg-main: #FFFFFF;
+        }
+
+        body { 
+            font-family: 'Pretendard', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            background-color: #F8FAFC;
+            padding-top: env(safe-area-inset-top);
+            color: #1E293B;
+        }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .progress-transition { transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+        /* 카드 디자인 개선 */
+        .modern-card {
+            background: #FFFFFF;
+            border: 1px solid rgba(226, 232, 240, 0.6);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+            border-radius: 1.5rem;
+        }
+
+        .active-tab { 
+            color: var(--u-blue); 
+            font-weight: 900; 
+            border-bottom: 3px solid var(--u-blue);
+        }
+
+        .bottom-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid #F1F5F9;
+        }
+
+        .routine-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        /* 버튼 애니메이션 */
+        .check-btn {
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .check-btn:active { transform: scale(0.92); opacity: 0.8; }
+
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    </style>
+</head>
+<body class="min-h-screen pb-28">
+
+    <div class="max-w-md mx-auto flex flex-col">
+        
+        <!-- 헤더 -->
+        <header class="bg-white/80 backdrop-blur-md px-6 py-6 flex justify-between items-center sticky top-0 z-50 border-b border-slate-50">
+            <div>
+                <h1 class="font-black text-2xl tracking-tighter text-slate-900 leading-none">12일 운동루틴</h1>
+                <p class="text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-1.5 font-mono">2/12 - 2/23 Diet Sheet</p>
+            </div>
+            <div class="bg-indigo-600 text-white px-4 py-2 rounded-2xl shadow-lg shadow-indigo-100">
+                <span id="total-badge" class="text-sm font-black italic">0%</span>
+            </div>
+        </header>
+
+        <!-- 컴팩트 대시보드 -->
+        <div class="px-5 pt-6 mb-4">
+            <div class="bg-slate-900 rounded-[2rem] p-7 text-white shadow-2xl relative overflow-hidden">
+                <div class="relative z-10 grid grid-cols-2 gap-8 divide-x divide-slate-800 text-center">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-widest">Uncle 이모부</p>
+                        <div class="text-3xl font-black italic tracking-tighter mb-2" id="u-percent">0%</div>
+                        <div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+                            <div id="u-bar" class="bg-indigo-400 h-full progress-transition" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="pl-8">
+                        <p class="text-[10px] font-bold text-pink-400 uppercase mb-2 tracking-widest">Niece 민승이</p>
+                        <div class="text-3xl font-black italic text-pink-400 tracking-tighter mb-2" id="n-percent">0%</div>
+                        <div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+                            <div id="n-bar" class="bg-pink-500 h-full progress-transition" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <main class="px-5">
+            <!-- 탭 1: Routine (그리드 방식) -->
+            <div id="routine" class="tab-content active animate-in fade-in duration-300">
+                <div class="flex items-center justify-between px-1 mb-5">
+                    <h3 class="text-base font-black text-slate-800 uppercase tracking-tight">Daily Schedule</h3>
+                    <span class="text-[10px] font-bold text-slate-300 bg-white px-2 py-1 rounded-lg border border-slate-100">12 Days Plan</span>
+                </div>
+                <div class="routine-grid pb-10" id="mission-container">
+                    <!-- 자바스크립트가 카드 생성 -->
+                </div>
+            </div>
+
+            <!-- 탭 2: 체중변화 (개별 보안) -->
+            <div id="weight-change" class="tab-content space-y-6 animate-in fade-in duration-300">
+                <h3 class="px-1 text-lg font-black text-slate-800">프라이빗 체중변화</h3>
+
+                <div class="flex bg-white p-1 rounded-2xl border border-slate-100 shadow-sm">
+                    <button onclick="setProfile('uncle')" id="btn-u" class="flex-1 py-4 rounded-xl text-sm font-black transition-all text-slate-400">이모부</button>
+                    <button onclick="setProfile('niece')" id="btn-n" class="flex-1 py-4 rounded-xl text-sm font-black transition-all text-slate-400">민승이</button>
+                </div>
+
+                <div id="weight-auth-section" class="hidden">
+                    <div id="input-card" class="modern-card p-10 text-center shadow-xl">
+                        <p id="profile-label" class="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-4">Personal Body Record</p>
+                        <div class="flex items-center justify-center gap-2 mb-8">
+                            <input type="number" id="weight-input" step="0.1" placeholder="00.0" class="w-32 text-6xl font-black text-center border-b-4 border-slate-100 outline-none transition-all bg-transparent p-0 text-slate-700 focus:border-indigo-400">
+                            <span class="text-2xl font-black text-slate-200">kg</span>
+                        </div>
+                        <button id="save-btn" onclick="saveWeight()" class="w-full py-5 rounded-3xl font-black text-lg shadow-lg active:scale-95 transition-all text-white">기록 저장하기</button>
+                    </div>
+                    <div id="weight-list" class="space-y-3 mt-8 pb-10"></div>
+                </div>
+
+                <div id="weight-placeholder" class="py-20 text-center text-slate-300">
+                    <div class="w-16 h-16 bg-white border border-slate-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
+                        <i class="fas fa-lock text-xl opacity-20"></i>
+                    </div>
+                    <p class="text-xs font-bold leading-relaxed opacity-60">본인 이름을 선택하면<br>개별 기록장이 나타납니다.</p>
+                </div>
+            </div>
+
+            <!-- 탭 3: Diet (강력 수칙) -->
+            <div id="diet" class="tab-content animate-in fade-in duration-300">
+                <div class="modern-card p-8 relative overflow-hidden border-orange-100">
+                    <div class="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mb-6 text-3xl mx-auto shadow-inner text-orange-400">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <h3 class="font-black text-xl text-center text-slate-800 mb-2 italic tracking-tighter">"입 터지면 내일 운동 1.5배!"</h3>
+                    <p class="text-[10px] text-center text-orange-400 mb-10 font-black uppercase tracking-[0.2em]">둘 다 먹는 거 좋아하니 철저히 감시!</p>
+                    
+                    <div class="space-y-4">
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                            <p class="text-[14px] font-black text-slate-700 mb-1.5">당류 & 기름진 음식 최소화</p>
+                            <p class="text-[11px] font-medium text-slate-400 leading-relaxed">액상과당과 튀김은 다이어트의 적입니다. 딱 12일만 거리두기 하세요.</p>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                            <p class="text-[14px] font-black text-slate-700 mb-1.5">채소 ➔ 고기 ➔ 밥 순서</p>
+                            <p class="text-[11px] font-medium text-slate-400 leading-relaxed">식이섬유를 먼저 먹어 당 흡수를 늦추는 것만으로도 살은 빠집니다.</p>
+                        </div>
+                        <div class="p-5 bg-indigo-600 rounded-3xl text-white shadow-xl shadow-indigo-100 mt-6 text-center">
+                            <p class="text-sm font-black mb-1.5"><i class="fas fa-skull mr-1"></i> 과식 시 패널티 발동</p>
+                            <p class="text-[11px] font-bold opacity-90 leading-relaxed italic">과식했다면? 내일 이모부와 민승이 모두 <br>운동 시간을 무조건 1.5배 늘려야 합니다!</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-12 text-center pb-10">
+                    <button onclick="resetData()" class="text-[9px] font-black text-slate-200 uppercase tracking-[0.3em] active:text-indigo-400">
+                        <i class="fas fa-redo mr-1"></i> Reset All Data
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- 하단 바 -->
+        <nav class="bottom-nav fixed bottom-0 left-0 right-0 z-[100] pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+            <div class="max-w-md mx-auto flex justify-around items-center h-20 px-4">
+                <button onclick="openTab(event, 'routine')" class="tab-btn active-tab flex flex-col items-center gap-1.5 flex-1 transition-all">
+                    <i class="fas fa-th-large text-lg"></i>
+                    <span class="text-[9px] font-bold uppercase tracking-tight">Routine</span>
+                </button>
+                <button onclick="openTab(event, 'weight-change')" class="tab-btn text-slate-300 flex flex-col items-center gap-1.5 flex-1 transition-all">
+                    <i class="fas fa-chart-line text-lg"></i>
+                    <span class="text-[9px] font-bold uppercase tracking-tight">체중변화</span>
+                </button>
+                <button onclick="openTab(event, 'diet')" class="tab-btn text-slate-300 flex flex-col items-center gap-1.5 flex-1 transition-all">
+                    <i class="fas fa-carrot text-lg"></i>
+                    <span class="text-[9px] font-bold uppercase tracking-tight">Diet</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        const schedule = [
+            { date: "2/12", uncle: "하체(H)", niece: "전신 A", uncleD: "프레스/익스텐션/컬", nieceD: "랫풀다운/프레스" },
+            { date: "2/13", uncle: "유산소 집중", niece: "유산소 집중", uncleD: "싸이클/스텝밀/러닝", nieceD: "싸이클/경사걷기" },
+            { date: "2/14", uncle: "하체(유지)", niece: "전신 B", uncleD: "이너타이/어덕션", nieceD: "레그프레스/스쿼트" },
+            { date: "2/15", uncle: "등/이두", niece: "휴식", uncleD: "랫풀다운/로우/컬", nieceD: "동네 산책 🌿" },
+            { date: "2/16", uncle: "하체(H)", niece: "전신 A", uncleD: "프레스/익스텐션/삼두", nieceD: "레그프레스/프레스" },
+            { date: "2/17", uncle: "유산소 집중", niece: "유산소 집중", uncleD: "싸이클/스텝밀/러닝", nieceD: "경사걷기 50분" },
+            { date: "2/18", uncle: "완전 휴식", niece: "완전 휴식", uncleD: "관절 찜질 및 휴식", nieceD: "충분한 수면" },
+            { date: "2/19", uncle: "하체(유지)", niece: "전신 B", uncleD: "힙쓰러스트/레그컬", nieceD: "랫풀다운/레그프레스" },
+            { date: "2/20", uncle: "유산소 집중", niece: "유산소 집중", uncleD: "싸이클/스텝밀/러닝", nieceD: "싸이클/경사걷기" },
+            { date: "2/21", uncle: "하체(H)", niece: "전신 A", uncleD: "프레스/익스텐션/컬", nieceD: "체스트프레스/로우" },
+            { date: "2/22", uncle: "등/이두", niece: "유산소 집중", uncleD: "랫풀/어시스트풀업", nieceD: "경사걷기 50분" },
+            { date: "2/23", uncle: "전신서킷", niece: "테스트", uncleD: "전체 순환 1세트", nieceD: "배운 동작 복습" }
+        ];
+
+        let activeUser = null;
+        let uCheck = JSON.parse(localStorage.getItem('rtn_un_v12') || '[]');
+        let nCheck = JSON.parse(localStorage.getItem('rtn_ni_v12') || '[]');
+        let wHistory = JSON.parse(localStorage.getItem('wgt_hs_v12') || '{"uncle":[], "niece":[]}');
+
+        function render() {
+            const container = document.getElementById('mission-container');
+            if(!container) return;
+
+            container.innerHTML = schedule.map((item, idx) => {
+                const uc = uCheck.includes(idx);
+                const nc = nCheck.includes(idx);
+                return `
+                    <div class="modern-card p-4 flex flex-col justify-between border-slate-100">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <span class="text-[10px] font-black text-slate-800">DAY ${idx+1}</span>
+                                <p class="text-[8px] font-bold text-slate-300 mt-0.5 uppercase tracking-tighter">${item.date}</p>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <!-- 이모부 체크 (파스텔 블루) -->
+                            <button onclick="toggleRoutine('uncle', ${idx})" class="w-full text-left p-3 rounded-xl border transition-all check-btn flex flex-col gap-0.5 ${uc ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-slate-50 border-transparent text-indigo-900'}">
+                                <div class="flex items-center gap-1 opacity-60 font-black text-[7px] uppercase tracking-widest">
+                                    <i class="fas ${uc ? 'fa-check-circle' : 'fa-circle'}"></i> UNCLE
+                                </div>
+                                <p class="text-[12px] font-black leading-tight ${uc ? 'line-through opacity-70' : ''}">${item.uncle}</p>
+                                <p class="text-[8px] font-medium opacity-40 leading-none truncate w-full">${item.uncleD}</p>
+                            </button>
+                            <!-- 민승이 체크 (파스텔 핑크) -->
+                            <button onclick="toggleRoutine('niece', ${idx})" class="w-full text-left p-3 rounded-xl border transition-all check-btn flex flex-col gap-0.5 ${nc ? 'bg-pink-500 border-pink-500 text-white shadow-md' : 'bg-pink-50 border-transparent text-pink-900'}">
+                                <div class="flex items-center gap-1 opacity-60 font-black text-[7px] uppercase tracking-widest">
+                                    <i class="fas ${nc ? 'fa-check-circle' : 'fa-circle'}"></i> NIECE
+                                </div>
+                                <p class="text-[12px] font-black leading-tight ${nc ? 'line-through opacity-70' : ''}">${item.niece}</p>
+                                <p class="text-[8px] font-medium opacity-40 leading-none truncate w-full">${item.nieceD}</p>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            updateStats();
+        }
+
+        function toggleRoutine(role, idx) {
+            if (role === 'uncle') {
+                uCheck = uCheck.includes(idx) ? uCheck.filter(i => i !== idx) : [...uCheck, idx];
+                localStorage.setItem('rtn_un_v12', JSON.stringify(uCheck));
+            } else {
+                nCheck = nCheck.includes(idx) ? nCheck.filter(i => i !== idx) : [...nCheck, idx];
+                localStorage.setItem('rtn_ni_v12', JSON.stringify(nCheck));
+            }
+            render();
+        }
+
+        function updateStats() {
+            const up = Math.round((uCheck.length / 12) * 100);
+            const np = Math.round((nCheck.length / 12) * 100);
+            const total = Math.round(((uCheck.length + nCheck.length) / 24) * 100);
+            
+            document.getElementById('u-percent').innerText = up + '%';
+            document.getElementById('u-bar').style.width = up + '%';
+            document.getElementById('n-percent').innerText = np + '%';
+            document.getElementById('n-bar').style.width = np + '%';
+            document.getElementById('total-badge').innerText = total + '%';
+        }
+
+        function setProfile(p) {
+            activeUser = p;
+            document.getElementById('weight-placeholder').classList.add('hidden');
+            document.getElementById('weight-auth-section').classList.remove('hidden');
+            
+            const bu = document.getElementById('btn-u');
+            const bn = document.getElementById('btn-n');
+            const label = document.getElementById('profile-label');
+            const saveBtn = document.getElementById('save-btn');
+            const weightInput = document.getElementById('weight-input');
+
+            if (p === 'uncle') {
+                bu.className = "flex-1 py-4 rounded-xl text-sm font-black transition-all bg-slate-900 text-white shadow-lg";
+                bn.className = "flex-1 py-4 rounded-xl text-sm font-black transition-all text-slate-400";
+                label.innerText = "UNCLE'S PRIVATE DIARY";
+                label.className = "text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4";
+                saveBtn.style.backgroundColor = "#4F46E5";
+            } else {
+                bu.className = "flex-1 py-4 rounded-xl text-sm font-black transition-all text-slate-400";
+                bn.className = "flex-1 py-4 rounded-xl text-sm font-black transition-all bg-pink-500 text-white shadow-lg";
+                label.innerText = "NIECE'S PRIVATE DIARY";
+                label.className = "text-[10px] font-black text-pink-400 uppercase tracking-widest mb-4";
+                saveBtn.style.backgroundColor = "#EC4899";
+            }
+            renderWeight();
+        }
+
+        function saveWeight() {
+            const input = document.getElementById('weight-input');
+            if (!input || !input.value || !activeUser) return;
+            const val = parseFloat(input.value).toFixed(1);
+            const now = new Date();
+            const dStr = `${now.getMonth() + 1}/${now.getDate()}`;
+            
+            wHistory[activeUser].unshift({ date: dStr, val: val });
+            if (wHistory[activeUser].length > 12) wHistory[activeUser].pop();
+            
+            localStorage.setItem('wgt_hs_v12', JSON.stringify(wHistory));
+            input.value = '';
+            renderWeight();
+        }
+
+        function renderWeight() {
+            const list = document.getElementById('weight-list');
+            if (!list || !activeUser) return;
+            const data = wHistory[activeUser];
+            
+            if (data.length === 0) {
+                list.innerHTML = `<div class="p-12 text-center text-slate-300 text-[11px] font-bold italic border-2 border-dashed border-slate-100 rounded-[2rem]">비밀 기록장입니다.<br>기록을 남겨보세요! ✨</div>`;
+                return;
+            }
+            
+            list.innerHTML = data.map((item, idx) => `
+                <div class="bg-white p-6 rounded-2xl flex justify-between items-center shadow-sm border border-slate-50 animate-in slide-in-from-right-2">
+                    <div class="flex items-center gap-5">
+                        <div class="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-[10px] font-black text-slate-300 uppercase">${item.date}</div>
+                        <p class="text-3xl font-black tracking-tighter text-slate-800">${item.val}<span class="text-xs font-bold text-slate-200 ml-1">kg</span></p>
+                    </div>
+                    ${idx === 0 ? `<span class="px-3 py-1 rounded-full text-[9px] font-black uppercase text-white shadow-sm ${activeUser==='uncle'?'bg-indigo-500':'bg-pink-500'}">Now</span>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function openTab(evt, tabName) {
+            const tabs = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabs.length; i++) tabs[i].classList.remove("active");
+            const btns = document.getElementsByClassName("tab-btn");
+            for (let i = 0; i < btns.length; i++) {
+                btns[i].classList.remove("active-tab");
+                btns[i].classList.add("text-slate-300");
+            }
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active-tab");
+            evt.currentTarget.classList.remove("text-slate-300");
+            window.scrollTo(0, 0);
+        }
+
+        function resetData() {
+            if (confirm("정말로 모든 기록을 초기화할까요? ✨")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        window.onload = render;
+    </script>
+</body>
+</html>
